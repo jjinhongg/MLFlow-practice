@@ -60,7 +60,7 @@ Next, append a few lines to use `pip` to install `mlflow` and `pandas`. This is 
 ```yaml
   - pip:
     - pandas==1.5.0
-    - mlflow==1.29.0
+    - mlflow==2.7.1
 ```
 
 The full file should look exactly like [exploratory/conda_env.yml](./exploratory/conda_env.yml)
@@ -72,3 +72,94 @@ Since you added the `pip` installs directly to the file, you didn't really insta
 ```
 
 The command will look into any new (or different) dependencies and install them. The `--prune` flag will remove anything that is no longer defined in the _conda_env.yml_ file. In this case, you didn't remove anything, but it is still a good idea to keep using it.
+
+Also do a `pip install -r requirements.txt` to ensure you have all the libraries required for the subsequent sections.
+
+## Step 2: MLFlow project file
+The project name will be the name of the directory. In this case, our project will be `exploratory` that we are going to use from the `/exploratory` directory.
+
+You will need to specify options by adding a `MLproject` file, which is a `text` file with `YAML` syntax. An example is shown below:
+
+```yaml
+# An MLFlow project that has a single entry point to validate a data set
+name: Dataset Validation
+
+conda_env: conda_env.yml
+
+entry_points:
+
+  main:
+    parameters:
+      log: {type: bool, default: true}
+      max_errors: {type: int, default: 1}
+      filename: path
+    command: "python validate.py {log} {max_errors} {filename}"
+
+```
+
+## Step 3: Run the project
+Run:
+```
+mlflow run . -P filename=carriage.csv
+```
+**Arguments**
+- `.`: Specifies the current directory
+- `-P`: Pass arguments
+- `filename`: The file path that contains the sample data.
+
+### Run Project from a remote Git repo
+An example of how to run from a Git repo:
+```
+mlflow run https://github.com/mlflow/mlflow-example.git -P alpha=0.4
+```
+MLproject file has to be in the `mlflow/mlflow-example` directory.
+
+# Serving a MLFlow model
+In this section we will be focusing on the `/serve` and `register` directory. Follow the steps in this ['models.ipynb'](/workspaces/MLFlow-practice/register/models.ipynb) to run the `log_model.py` script. The notebook will provide an idea on how to update model versions, descriptions and change the name if necessary.
+
+## Serve
+```bash
+cd serve
+ls mlruns/0
+```
+We should see something similar to the this:
+```
+a50e811ab82646f790e652932f330afd  meta.yaml
+```
+and if we look at the tree structure using:
+```
+tree mlruns/0/a50e811ab82646f790e652932f330afd/artifacts
+```
+We will see the something similar to this:
+```
+mlruns/0/a50e811ab82646f790e652932f330afd/artifacts
+└── model
+    ├── MLmodel
+    ├── conda.yaml
+    ├── model.pkl
+    ├── python_env.yaml
+    └── requirements.txt
+```
+From the tree structure, under a model run (a string of gibberish characters), we can observe the storage format of a model. Over here for the model `model`, the artifacts listed as: 
+- `model.pkl`: The actual model in `.pkl`
+- `conda.yaml`: The conda environment `.yml`
+- `python_env.yaml`: The python environment
+- `requirements.txt`: Packages that are used for the model run
+
+When serving the model, it will look for these artifacts to understand how to serve the model. It will also look into their respective `$PATH`. So, as we have been using `conda` and in case we do not have the python environment in our `$PATH`, run the code below in the bash terminal:
+```
+curl https://pyenv.run | bash
+python -m  pip install virtualenv
+PATH="$HOME/.pyenv/bin:$PATH"
+```
+
+Now, we are ready to serve the model by running this code in our terminal:
+```
+mlflow models serve -m runs:/a50e811ab82646f790e652932f330afd/model -p 5001
+```
+You can use any port that are not in use. We are using -p 5001 since 5000 was in use for the localhost server.
+
+Example of how to perform predictions with the served model:
+```bash
+curl -X POST -H "Content-Type:application/json; format=pandas-split" --data '{"columns":["text"],"data":[["Today is a perfect day to practice automation skills"]]}' http://127.0.0.1:5000/invocations
+```

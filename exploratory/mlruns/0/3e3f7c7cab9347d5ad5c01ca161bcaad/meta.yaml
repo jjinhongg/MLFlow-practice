@@ -1,0 +1,15 @@
+artifact_uri: file:///workspaces/MLFlow-practice/exploratory/mlruns/0/3e3f7c7cab9347d5ad5c01ca161bcaad/artifacts
+end_time: 1698031124873
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 3e3f7c7cab9347d5ad5c01ca161bcaad
+run_name: ''
+run_uuid: 3e3f7c7cab9347d5ad5c01ca161bcaad
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1698031018492
+status: 3
+tags: []
+user_id: codespace
